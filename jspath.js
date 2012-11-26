@@ -2,6 +2,28 @@
 var jspath = {
 
 	shortest_path: new Array(),
+	nodes: new Array(),
+
+
+	// pos -> A position. Ex.  { row: 7, col: 5 }
+	// goal -> A position. Ex.  { row: 0, col: 0 }
+	// parent -> A node
+	node: function(pos, goal, parent) {
+
+		var object = {};
+		object.pos = pos;
+		object.active = true;
+		object.goal = goal;
+		object.distance = jspath.calculate_distance(pos, goal);
+
+		if ( parent != undefined ){
+			object.steps = parent.steps + 1;
+			object.parent = parent;
+			object.weight = object.distance + object.steps;
+		}
+
+		return object;
+	},
 
 	/**
 	* Creates and returns a 2 dimensional Array.
@@ -51,7 +73,104 @@ var jspath = {
 		}
 	},
 
-	
+
+	find_path2: function(matrix, start, goal){
+
+		var node = jspath.node(start, goal, undefined);
+		node.steps = 0;
+
+		jspath.traverse(matrix, node, goal);
+
+	},
+
+	reverse_path: function(position){
+		
+		jspath.shortest_path.push(position.pos);
+		if ( position.parent != undefined ){
+			jspath.reverse_path(position.parent);
+		}
+	},
+
+	node_exists: function(position){
+		var found = false;
+
+		// Check if we already have node in table
+		$.each(jspath.nodes, function(){
+			if ( this.pos.row == position.row && this.pos.col == position.col ){
+				found = true;
+			}	
+		});
+		return found;
+	},
+
+	traverse: function(matrix, position, goal){
+
+		if ( jspath.at_goal(position.pos, goal) ) {
+			console.log("We did it");
+			jspath.reverse_path(position);
+		} else {	
+
+			//console.log("Looking at: " + position.pos.row + ", " + position.pos.col + ", " + position.weight);
+
+			// Remove myself from jspath.nodes
+			jspath.remove_node(position);
+
+			// Add Nodes for this position
+			$.each(jspath.directions(), function(){
+				var row = position.pos.row + this.row;
+				var col = position.pos.col + this.col;
+				var pos = {row: row, col: col };
+
+				if ( matrix[row] != undefined && matrix[row][col] == '.' && !jspath.node_exists(pos) ){
+					var node = jspath.node(pos, goal, position);
+					jspath.nodes.push(node);
+				}
+			});
+		
+			// Find the best node to work with 
+			var next_node = jspath.lowest_weighted_node();
+
+			if ( next_node != undefined ){
+				if ( next_node.steps < 300 ){
+					// Work it
+					jspath.traverse(matrix, next_node, goal);
+				}
+			} else {
+				console.log("no path found");
+			}
+		}
+	},
+
+	lowest_weighted_node: function(){
+		var node = undefined;
+		var weight = 0;
+
+		$.each(jspath.nodes, function(){
+			if ( this.active == true ) {
+				if ( node == undefined || this.weight < weight ){
+					node = this;
+					weight = this.weight;
+				}
+			}
+		});
+		return node;
+	},
+
+	remove_node: function(node){
+/*
+		var index = undefined;
+		for (var i = 0; i < jspath.nodes.length; i++){
+			if ( jspath.nodes[i] === node ){
+				index = i;
+				break;
+			}
+		}
+		if ( index != undefined ){
+			jspath.nodes.splice(index, 1);
+		}
+*/
+		node.active = false;
+	},	
 
 	find_path: function(matrix, start, goal){
 		// Check if we are at goal

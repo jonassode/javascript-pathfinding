@@ -66,7 +66,7 @@
 		matrix[goal.row][goal.col] = '.';
 		matrix[start.row][start.col] = '@';
 
-		jspath.find_path(matrix, start, goal);
+		jspath.find_path2(matrix, start, goal);
 
 		for ( var i = 0; i < jspath.shortest_path.length; i++){
 			var p = jspath.shortest_path[i];
