@@ -34,13 +34,14 @@
 				text = text + "<tr>"
 		        	for( col = 0; col < matrix[row].length; col++) {
 					var bg = "#C0C0C0";
+					var content = matrix[row][col];
 					if ( smatrix[row][col] == "!" ){
 						bg = 'pink';
 					}
-					if ( matrix[row][col] == "#" ){
+					if ( matrix[row][col] == 0 ){
 						bg = 'black';
 					}
-		                	text = text + "<td><div class='square' style='background-color:"+bg+"; border:1px dashed gray;' >"+matrix[row][col]+"</div></td>";
+		                	text = text + "<td><div class='square' style='background-color:"+bg+"; border:1px dashed gray;' >"+content+"</div></td>";
 			        }
 				text = text + "</tr>";
 			}
@@ -49,29 +50,47 @@
 			document.getElementById('test_area').innerHTML = text;
 		}
 
-		var matrix = jspath.create_matrix(20,30);
-		var smatrix = jspath.create_matrix(20,30);
+		// Defining the start and goal positions
 		var start = {row: 15, col: 25 }
 		var goal = {row: 0, col: 0 }
+
+		// Creating the matrix
+		var matrix = jspath.create_matrix(20,30);
+
+		// Creating another matrix for holding found path
+		var smatrix = jspath.create_matrix(20,30);
+
+		// Loading the matrix with random blockers (0) and weighted elements ( 1 - 10 )
 		for( row = 0; row < matrix.length; row++) {
 	        	for( col = 0; col < matrix[row].length; col++) {
 
 				if ( Math.floor((Math.random()*10)+1) > 8 ){
-					matrix[row][col] = '#';
+					matrix[row][col] = 0;
+				} else if ( Math.floor((Math.random()*10)+1) > 7 ) {
+					matrix[row][col] = 5;
 				}
 			}
 		}
 
-		// Setting Start and stop
-		matrix[goal.row][goal.col] = '.';
-		matrix[start.row][start.col] = '@';
+		// Setting Start and stop to Matrix
+		matrix[goal.row][goal.col] = 1;
+		matrix[start.row][start.col] = 1;
 
-		jspath.find_path2(matrix, start, goal);
+		// Setting up the start time
+		var start_time = (new Date).getTime();
+		// Start the traverse
+		jspath.find_path(matrix, start, goal);
+		// Calculating the diff time
+		var diff_time = (new Date).getTime() - start_time;
 
+		// Loading the jspath.shortest_path to the smatrix
 		for ( var i = 0; i < jspath.shortest_path.length; i++){
 			var p = jspath.shortest_path[i];
 			smatrix[p.row][p.col] = "!";
 		}
+
+		// 
+		console.log("Path found in " + diff_time + " ms.");
 
 		matrix[start.row][start.col] = '@';
 		matrix[goal.row][goal.col] = '$';

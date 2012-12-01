@@ -1,13 +1,42 @@
+var jspath_util = {
+	/**
+	* Creates and returns all posible directions.
+	*
+	* @return {Array[Position]}	Returns an array with all the directions.
+	*/
+	create_directions: function(){
+		var dirs = new Array();
+		dirs.push( {row: 0, col: -1 } );
+		dirs.push( {row: 0, col: 1 } );
+		dirs.push( {row: -1, col: 0 } );
+		dirs.push( {row: 1, col: 0 } );
+
+		return dirs;
+	}
+}
 
 var jspath = {
 
 	shortest_path: new Array(),
 	nodes: new Array(),
+	timeout: 3000,
+	directions: jspath_util.create_directions(),
 
+	/**
+	* Clears the shortest path so you can reuse the function
+	*/
+	clear_shortest_path: function() {
+		jspath.shortest_path = new Array();
+	},
 
-	// pos -> A position. Ex.  { row: 7, col: 5 }
-	// goal -> A position. Ex.  { row: 0, col: 0 }
-	// parent -> A node
+	/**
+	* Creates a node object.
+	*
+	* @param {Position} pos -> A position. Ex.  { row: 7, col: 5 }
+	* @param {Position} goal -> A position. Ex.  { row: 0, col: 0 }
+	* @param {Node} parent -> The parent node
+	* @return {Node}	Returns the matrix.
+	*/
 	node: function(pos, goal, parent) {
 
 		var object = {};
@@ -17,7 +46,7 @@ var jspath = {
 		object.distance = jspath.calculate_distance(pos, goal);
 
 		if ( parent != undefined ){
-			object.steps = parent.steps + 1;
+			object.steps = parent.steps + pos.weight;
 			object.parent = parent;
 			object.weight = object.distance + object.steps;
 		}
@@ -38,29 +67,26 @@ var jspath = {
 		for( var row = 0; row < rows; row++) {
 			matrix[row] = new Array(cols);
 			for( var col = 0; col < cols; col++) {
-				matrix[row][col] = '.';
+				matrix[row][col] = 1;
 
 			}
 		}
 		return matrix;
 	},
 
-	directions: function(){
-		var dirs = new Array();
-		dirs.push( {row: 0, col: -1 } );
-		dirs.push( {row: 0, col: 1 } );
-		dirs.push( {row: -1, col: 0 } );
-		dirs.push( {row: 1, col: 0 } );
-
-		return dirs;
-	},
-
-	calculate_distance: function(start, goal){
-		var rows = goal.row - start.row;
+	/**
+	* Calculates and returns the position from a given object.
+	*
+	* @param {Position} position -> A position. Ex.  { row: 7, col: 5 }
+	* @param {Position} goal -> A position. Ex.  { row: 0, col: 0 }
+	* @return {Integer}	Calculated distance
+	*/
+	calculate_distance: function(position, goal){
+		var rows = goal.row - position.row;
 		if ( rows < 0 ) {
 			rows = rows * -1;
 		}
-		var cols = goal.col - start.col;
+		var cols = goal.col - position.col;
 		if ( cols < 0 ) {
 			cols = cols * -1;
 		}
@@ -74,7 +100,7 @@ var jspath = {
 	},
 
 
-	find_path2: function(matrix, start, goal){
+	find_path: function(matrix, start, goal){
 
 		var node = jspath.node(start, goal, undefined);
 		node.steps = 0;
@@ -98,6 +124,7 @@ var jspath = {
 		$.each(jspath.nodes, function(){
 			if ( this.pos.row == position.row && this.pos.col == position.col ){
 				found = true;
+				return false;
 			}	
 		});
 		return found;
@@ -106,22 +133,21 @@ var jspath = {
 	traverse: function(matrix, position, goal){
 
 		if ( jspath.at_goal(position.pos, goal) ) {
-			console.log("We did it");
+			// If we find the goal we reverse the path
 			jspath.reverse_path(position);
 		} else {	
-
-			//console.log("Looking at: " + position.pos.row + ", " + position.pos.col + ", " + position.weight);
 
 			// Remove myself from jspath.nodes
 			jspath.remove_node(position);
 
 			// Add Nodes for this position
-			$.each(jspath.directions(), function(){
+			$.each(jspath.directions, function(){
 				var row = position.pos.row + this.row;
 				var col = position.pos.col + this.col;
 				var pos = {row: row, col: col };
 
-				if ( matrix[row] != undefined && matrix[row][col] == '.' && !jspath.node_exists(pos) ){
+				if ( matrix[row] != undefined && matrix[row][col] > 0 && !jspath.node_exists(pos) ){
+					pos.weight = matrix[row][col];
 					var node = jspath.node(pos, goal, position);
 					jspath.nodes.push(node);
 				}
@@ -131,12 +157,10 @@ var jspath = {
 			var next_node = jspath.lowest_weighted_node();
 
 			if ( next_node != undefined ){
-				if ( next_node.steps < 300 ){
+				if ( next_node.steps < jspath.timeout ){
 					// Work it
 					jspath.traverse(matrix, next_node, goal);
 				}
-			} else {
-				console.log("no path found");
 			}
 		}
 	},
@@ -157,72 +181,9 @@ var jspath = {
 	},
 
 	remove_node: function(node){
-/*
-		var index = undefined;
-		for (var i = 0; i < jspath.nodes.length; i++){
-			if ( jspath.nodes[i] === node ){
-				index = i;
-				break;
-			}
-		}
-		if ( index != undefined ){
-			jspath.nodes.splice(index, 1);
-		}
-*/
 		node.active = false;
 	},	
 
-	find_path: function(matrix, start, goal){
-		// Check if we are at goal
-		if ( jspath.at_goal(start,goal) ){
-			console.log("found it");
-			return true;
-		}
-
-		var dirs = new Array();
-
-		$.each(jspath.directions(),function(){
-			var row = start.row + this.row;
-			var col = start.col + this.col;
-			var pos = {row: row, col: col };
-			if ( matrix[row] != undefined && matrix[row][col] == '.' ){
-				var distance = jspath.calculate_distance(pos, goal);
-				dirs.push({distance: distance, pos: pos });
-				matrix[row][col] = distance;
-			}
-		});
-
-		while ( dirs.length > 0 ){
-			var dir = jspath.shortest_dir(dirs);
-			if( jspath.find_path(matrix, dir.pos, goal) == true ){
-				jspath.shortest_path.push(dir.pos);
-				return true;
-			}
-			jspath.remove_dir(dirs, dir);
-		}
-	},
-
-	remove_dir: function(dirs, dir){
-		var index = 0;
-		for (var i = 0; i < dirs.length; i++){
-			if ( dirs[i] === dir ){
-				index = i;
-			}
-		}
-		dirs.splice(index, 1);
-	},
-
-	shortest_dir: function(dirs){
-		var shortest = undefined;
-		var shortest_distance = 0;
-		$.each(dirs, function(){
-			if ( shortest == undefined || this.distance < shortest_distance ){
-				shortest = this;
-				shortest_distance = this.distance;
-			}
-		});
-		return shortest;
-	}
 }
 
 
