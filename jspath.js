@@ -26,6 +26,7 @@ var jspath = {
 	* Clears the shortest path so you can reuse the function
 	*/
 	clear_shortest_path: function() {
+		jspath.nodes = new Array();
 		jspath.shortest_path = new Array();
 	},
 
