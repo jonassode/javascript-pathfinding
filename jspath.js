@@ -17,18 +17,12 @@ var jspath_util = {
 
 var jspath = {
 
-	shortest_path: new Array(),
-	nodes: new Array(),
+	// Used to hold nodes
+	nodes:undefined,
+	// Maximum number of steps
 	timeout: 3000,
+	// Variable with all possible directions
 	directions: jspath_util.create_directions(),
-
-	/**
-	* Clears the shortest path so you can reuse the function
-	*/
-	clear_shortest_path: function() {
-		jspath.nodes = new Array();
-		jspath.shortest_path = new Array();
-	},
 
 	/**
 	* Creates a node object.
@@ -103,18 +97,22 @@ var jspath = {
 
 	find_path: function(matrix, start, goal){
 
+		var path = new Array();
+		jspath.nodes = new Array();
+
 		var node = jspath.node(start, goal, undefined);
 		node.steps = 0;
 
-		jspath.traverse(matrix, node, goal);
+		jspath.traverse(matrix, node, goal, path);
+		return path;
 
 	},
 
-	reverse_path: function(position){
+	reverse_path: function(position, path){
 		
-		jspath.shortest_path.push(position.pos);
+		path.push(position.pos);
 		if ( position.parent != undefined ){
-			jspath.reverse_path(position.parent);
+			jspath.reverse_path(position.parent, path);
 		}
 	},
 
@@ -131,11 +129,11 @@ var jspath = {
 		return found;
 	},
 
-	traverse: function(matrix, position, goal){
+	traverse: function(matrix, position, goal, path){
 
 		if ( jspath.at_goal(position.pos, goal) ) {
 			// If we find the goal we reverse the path
-			jspath.reverse_path(position);
+			jspath.reverse_path(position, path);
 		} else {	
 
 			// Remove myself from jspath.nodes
@@ -160,7 +158,7 @@ var jspath = {
 			if ( next_node != undefined ){
 				if ( next_node.steps < jspath.timeout ){
 					// Work it
-					jspath.traverse(matrix, next_node, goal);
+					jspath.traverse(matrix, next_node, goal, path);
 				}
 			}
 		}

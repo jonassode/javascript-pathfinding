@@ -79,13 +79,13 @@
 		// Setting up the start time
 		var start_time = (new Date).getTime();
 		// Start the traverse
-		jspath.find_path(matrix, start, goal);
+		var shortest_path = jspath.find_path(matrix, start, goal);
 		// Calculating the diff time
 		var diff_time = (new Date).getTime() - start_time;
 
 		// Loading the jspath.shortest_path to the smatrix
-		for ( var i = 0; i < jspath.shortest_path.length; i++){
-			var p = jspath.shortest_path[i];
+		for ( var i = 0; i < shortest_path.length; i++){
+			var p = shortest_path[i];
 			smatrix[p.row][p.col] = "!";
 		}
 
